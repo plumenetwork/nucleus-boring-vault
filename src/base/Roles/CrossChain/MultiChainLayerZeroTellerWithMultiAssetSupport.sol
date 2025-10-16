@@ -17,7 +17,7 @@ contract MultiChainLayerZeroTellerWithMultiAssetSupport is MultiChainTellerBase,
     error MultiChainLayerZeroTellerWithMultiAssetSupport_InvalidToken();
     error MultiChainTellerBase_ShareAmountTooSmall(uint256 shareAmount);
 
-    uint256 private decimalConversionRate;
+    uint256 private immutable decimalConversionRate;
     uint8 private constant SHARED_DECIMALS = 6;
 
     constructor(
