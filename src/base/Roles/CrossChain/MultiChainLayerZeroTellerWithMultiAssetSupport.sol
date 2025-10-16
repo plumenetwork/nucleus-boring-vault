@@ -129,7 +129,7 @@ contract MultiChainLayerZeroTellerWithMultiAssetSupport is MultiChainTellerBase,
      * @param _amountLD The amount in local decimals.
      * @return amountSD The amount in shared decimals.
      */
-    function _toSD(uint256 _amountLD) internal view virtual returns (uint64 amountSD) {
-        return uint64(_amountLD / decimalConversionRate);
+    function _toSD(uint256 _amountLD) internal view virtual returns (uint256 amountSD) {
+        return _amountLD / decimalConversionRate;
     }
 }
