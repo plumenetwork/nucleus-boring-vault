@@ -23,9 +23,10 @@
   },
   "teller": {
     "tellerSalt": "0x51f8968749a56d01202c9100000000000000000000000000000000000000000e",
+    "predicateProxy": "0x6104fe10ca937a086ba7AdbD0910A4733d380cB6",
     "maxGasForPeer": 100000,
     "minGasForPeer": 0,
-    "peerEid": 30280,
+    "peerEid": [30280],
     "tellerContractName": "TellerWithMultiAssetSupport",
     "assets": [],
     "dvnIfNoDefault": {
@@ -48,7 +49,8 @@
     "strategist": "0x00000000004F96C07B83e86600D86F0000000000",
     "exchangeRateBot": "0x1755397BEc366a1e1160d8aE0106C60E7e344B56",
     "pauser": "0xe5CcB29Cb9C886da329098A184302E2D5Ff0cD9E",
-    "address": "0x00000000004F96C07B83e86600D86F0000000000"
+    "address": "0x00000000004F96C07B83e86600D86F0000000000",
+"operator": "0x4371e7eC29BbB60872E15C5123C3CaC948967Eb7"
   },
   "decoder": {
     "decoderSalt": "0x48b53893da2e0b0248268c00000000000000000000000000000000000000000e",

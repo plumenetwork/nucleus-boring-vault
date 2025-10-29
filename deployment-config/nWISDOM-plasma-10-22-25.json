@@ -1,0 +1,63 @@
+{
+  "base":"0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb",
+  "protocolAdmin": "0xc28e1cDfB582953fEf53f76C64426c2aC79C716e",
+  "boringVaultAndBaseDecimals": "6",
+  "boringVault": {
+    "boringVaultSalt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "boringVaultName": "Nest WisdomTree Vault",
+    "boringVaultSymbol": "nWISDOM",
+    "address": "0x0000000000000000000000000000000000000000"
+  },
+  "manager": {
+    "managerSalt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "address": "0x0000000000000000000000000000000000000000"
+  },
+  "accountant": {
+    "accountantSalt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "payoutAddress": "0x1D73129ac29377d7B3729fb5861C0c623C497715",
+    "allowedExchangeRateChangeUpper": "10006",
+    "allowedExchangeRateChangeLower": "10000",
+    "minimumUpdateDelayInSeconds": "3600",
+    "managementFee": "0",
+    "address": "0x0000000000000000000000000000000000000000"
+  },
+  "teller": {
+    "tellerSalt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "predicateProxy": "0x6104fe10ca937a086ba7AdbD0910A4733d380cB6",
+    "maxGasForPeer": 100000,
+    "minGasForPeer": 0,
+    "peerEid": [30101,30102,30370],
+    "tellerContractName": "MultiChainLayerZeroTellerWithMultiAssetSupport",
+    "assets": ["0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb"],
+    "dvnIfNoDefault": {
+      "required": [
+        "0x282b3386571f7f794450d5789911a9804fa346b4"
+      ],
+      "optional": [
+        "0xabc9b1819cc4d9846550f928b985993cf6240439",
+        "0xa51ce237fafa3052d5d3308df38a024724bb1274"
+      ],
+      "blockConfirmationsRequiredIfNoDefault": 15,
+      "optionalThreshold": 1
+    },
+    "delegate": "0x0C2350b53d0A5610b219B064515EE0ad50829345",
+    "address": "0x0000000000000000000000000000000000000000"
+  },
+  "rolesAuthority": {
+    "rolesAuthoritySalt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "strategist": "0x4371e7eC29BbB60872E15C5123C3CaC948967Eb7",
+    "exchangeRateBot": "0x4371e7eC29BbB60872E15C5123C3CaC948967Eb7",
+    "pauser": "0x4371e7eC29BbB60872E15C5123C3CaC948967Eb7",
+    "operator": "0x4371e7eC29BbB60872E15C5123C3CaC948967Eb7",
+    "address": "0x57Aa9D6C6Be5695ddD1eBD3D0B6D3e38C0ec5Ccf"
+  },
+  "decoder": {
+    "decoderSalt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "address": "0x0000000000000000000000000000000000000000"
+  },
+  "salt": {
+    "generate": true,
+    "permissioned": true,
+    "multichainRestricted": false
+  }
+}
