@@ -20,15 +20,17 @@ contract DeployCrossChainOPTellerWithMultiAssetSupport is BaseScript {
         // Require config Values
         require(config.boringVault.code.length != 0, "boringVault must have code");
         require(config.accountant.code.length != 0, "accountant must have code");
-        require(config.tellerSalt != bytes32(0), "tellerSalt");
         require(config.boringVault != address(0), "boringVault");
         require(config.accountant != address(0), "accountant");
+
+        string memory saltString = string.concat(config.boringVaultName, " CrossChainOPTellerWithMultiAssetSupport");
+        bytes32 salt = generateCreate3Salt(config, saltString, config.tellerSalt);
 
         // Create Contract
         bytes memory creationCode = type(CrossChainOPTellerWithMultiAssetSupport).creationCode;
         CrossChainOPTellerWithMultiAssetSupport teller = CrossChainOPTellerWithMultiAssetSupport(
             CREATEX.deployCreate3(
-                config.tellerSalt,
+                salt,
                 abi.encodePacked(
                     creationCode, abi.encode(broadcaster, config.boringVault, config.accountant, config.opMessenger)
                 )

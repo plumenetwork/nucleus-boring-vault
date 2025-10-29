@@ -36,15 +36,17 @@ contract DeployMultiChainLayerZeroTellerWithMultiAssetSupport is BaseScript {
         // Require config Values
         require(config.boringVault.code.length != 0, "boringVault must have code");
         require(config.accountant.code.length != 0, "accountant must have code");
-        require(config.tellerSalt != bytes32(0), "tellerSalt");
         require(config.boringVault != address(0), "boringVault");
         require(config.accountant != address(0), "accountant");
+
+        string memory saltString = string.concat(config.boringVaultName, " MultiChainLayerZeroTellerWithMultiAssetSupport");
+        bytes32 salt = generateCreate3Salt(config, saltString, config.tellerSalt);
 
         // Create Contract
         bytes memory creationCode = type(MultiChainLayerZeroTellerWithMultiAssetSupport).creationCode;
         MultiChainLayerZeroTellerWithMultiAssetSupport teller = MultiChainLayerZeroTellerWithMultiAssetSupport(
             CREATEX.deployCreate3(
-                config.tellerSalt,
+                salt,
                 abi.encodePacked(
                     creationCode, abi.encode(broadcaster, config.boringVault, config.accountant, config.lzEndpoint)
                 )
@@ -62,8 +64,7 @@ contract DeployMultiChainLayerZeroTellerWithMultiAssetSupport is BaseScript {
             "Address not left padded correctly"
         );
 
-        teller.setPeer(config.peerEid, leftPaddedBytes32Peer);
-        teller.addChain(config.peerEid, true, true, address(teller), config.maxGasForPeer, config.minGasForPeer);
+
         ILayerZeroEndpointV2 endpoint = ILayerZeroEndpointV2(config.lzEndpoint);
 
         // Post Deploy Checks
@@ -75,21 +76,13 @@ contract DeployMultiChainLayerZeroTellerWithMultiAssetSupport is BaseScript {
         );
         require(address(endpoint) == config.lzEndpoint, "LZ Teller must have endpoint set");
 
-        // get the default libraries for the peer
-        address sendLib = endpoint.defaultSendLibrary(config.peerEid);
-        address receiveLib = endpoint.defaultReceiveLibrary(config.peerEid);
-        require(sendLib != address(0), "sendLib = 0, check peerEid");
-        require(receiveLib != address(0), "receiveLib = 0, check peerEid");
+        for (uint i; i < config.peerEid.length; i++) {
+            teller.setPeer(config.peerEid[i], leftPaddedBytes32Peer);
+            teller.addChain(config.peerEid[i], true, true, address(teller), config.maxGasForPeer, config.minGasForPeer);
+        }
 
         // check if a default config exists for these libraries and if not set the config
-        _checkUlnConfig(address(teller), config, sendLib);
-        _checkUlnConfig(address(teller), config, receiveLib);
-
-        // confirm the library is set
-        sendLib = endpoint.getSendLibrary(config.teller, config.peerEid);
-        (receiveLib,) = endpoint.getReceiveLibrary(config.teller, config.peerEid);
-        require(sendLib != address(0), "No sendLib");
-        require(receiveLib != address(0), "no receiveLib");
+        _setConfig(address(teller), endpoint, config);
 
         // transfer delegate to the multisig
         teller.setDelegate(config.protocolAdmin);
@@ -97,52 +90,51 @@ contract DeployMultiChainLayerZeroTellerWithMultiAssetSupport is BaseScript {
         return address(teller);
     }
 
-    function _checkUlnConfig(address newTeller, ConfigReader.Config memory config, address lib) internal {
-        ILayerZeroEndpointV2 endpoint = ILayerZeroEndpointV2(config.lzEndpoint);
+    // function _checkUlnConfig(address newTeller, ConfigReader.Config memory config, address lib) internal {
+    //     ILayerZeroEndpointV2 endpoint = ILayerZeroEndpointV2(config.lzEndpoint);
 
-        bytes memory configBytes = endpoint.getConfig(newTeller, lib, config.peerEid, 2);
-        UlnConfig memory ulnConfig = abi.decode(configBytes, (UlnConfig));
+    //     bytes memory configBytes = endpoint.getConfig(newTeller, lib, config.peerEid, 2);
+    //     UlnConfig memory ulnConfig = abi.decode(configBytes, (UlnConfig));
 
-        uint8 numRequiredDVN = ulnConfig.requiredDVNCount;
-        uint8 numOptionalDVN = ulnConfig.optionalDVNCount;
-        bool isDead;
+    //     uint8 numRequiredDVN = ulnConfig.requiredDVNCount;
+    //     uint8 numOptionalDVN = ulnConfig.optionalDVNCount;
+    //     bool isDead;
 
-        for (uint256 i; i < numRequiredDVN; ++i) {
-            if (ulnConfig.requiredDVNs[i] == DEAD) {
-                isDead = true;
-            }
-        }
+    //     for (uint256 i; i < numRequiredDVN; ++i) {
+    //         if (ulnConfig.requiredDVNs[i] == DEAD) {
+    //             isDead = true;
+    //         }
+    //     }
 
-        for (uint256 i; i < numOptionalDVN; ++i) {
-            if (ulnConfig.optionalDVNs[i] == DEAD) {
-                isDead = true;
-            }
-        }
+    //     for (uint256 i; i < numOptionalDVN; ++i) {
+    //         if (ulnConfig.optionalDVNs[i] == DEAD) {
+    //             isDead = true;
+    //         }
+    //     }
 
-        // if no dead address in the ulnConfig, prompt for use of default onchain config, otherwise just use what's in
-        // config file
-        if (!isDead) {
-            string memory a = vm.prompt(
-                "There is a default onchain configuration for this chain/peerEid combination. Would you like to use it? (y/n)"
-            );
-            if (compareStrings(a, "y")) {
-                console2.log("using default onchain config");
-            } else {
-                console2.log("setting LayerZero ULN config using params provided in config file");
-                _setConfig(newTeller, endpoint, lib, config);
-            }
-        } else {
-            console2.log(
-                "No default configuration for this chain/peerEid combination. Using params provided in config file"
-            );
-            _setConfig(newTeller, endpoint, lib, config);
-        }
-    }
+    //     // if no dead address in the ulnConfig, prompt for use of default onchain config, otherwise just use what's in
+    //     // config file
+    //     if (!isDead) {
+    //         string memory a = vm.prompt(
+    //             "There is a default onchain configuration for this chain/peerEid combination. Would you like to use it? (y/n)"
+    //         );
+    //         if (compareStrings(a, "y")) {
+    //             console2.log("using default onchain config");
+    //         } else {
+    //             console2.log("setting LayerZero ULN config using params provided in config file");
+    //             _setConfig(newTeller, endpoint, lib, config);
+    //         }
+    //     } else {
+    //         console2.log(
+    //             "No default configuration for this chain/peerEid combination. Using params provided in config file"
+    //         );
+    //         _setConfig(newTeller, endpoint, lib, config);
+    //     }
+    // }
 
     function _setConfig(
         address newTeller,
         ILayerZeroEndpointV2 endpoint,
-        address lib,
         ConfigReader.Config memory config
     )
         internal
@@ -165,9 +157,24 @@ contract DeployMultiChainLayerZeroTellerWithMultiAssetSupport is BaseScript {
             )
         );
 
-        SetConfigParam[] memory setConfigParams = new SetConfigParam[](1);
-        setConfigParams[0] = SetConfigParam(config.peerEid, 2, ulnConfigBytes);
-        endpoint.setConfig(newTeller, lib, setConfigParams);
+        for(uint i; i < config.peerEid.length; i++) {
+            // get the default libraries for the peer
+            address sendLib = endpoint.defaultSendLibrary(config.peerEid[i]);
+            address receiveLib = endpoint.defaultReceiveLibrary(config.peerEid[i]);
+            require(sendLib != address(0), "sendLib = 0, check peerEid");
+            require(receiveLib != address(0), "receiveLib = 0, check peerEid");
+
+            SetConfigParam[] memory setConfigParams = new SetConfigParam[](1);
+            setConfigParams[0] = SetConfigParam(config.peerEid[i], 2, ulnConfigBytes);
+            endpoint.setConfig(newTeller, sendLib, setConfigParams);
+            endpoint.setConfig(newTeller, receiveLib, setConfigParams);
+
+            // confirm the library is set
+            sendLib = endpoint.getSendLibrary(config.teller, config.peerEid[i]);
+            (receiveLib,) = endpoint.getReceiveLibrary(config.teller, config.peerEid[i]);
+            require(sendLib != address(0), "No sendLib");
+            require(receiveLib != address(0), "no receiveLib");
+        }
     }
 
     function sortAddresses(address[] memory addresses) internal pure returns (address[] memory) {
