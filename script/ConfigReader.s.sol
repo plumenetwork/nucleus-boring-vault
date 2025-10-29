@@ -2,15 +2,20 @@
 pragma solidity 0.8.21;
 
 import { stdJson as StdJson } from "@forge-std/StdJson.sol";
+import { console2 } from "forge-std/console2.sol";
+import { VmSafe } from "forge-std/Vm.sol";
 
 interface IAuthority {
     function setAuthority(address newAuthority) external;
     function transferOwnership(address newOwner) external;
-    function owner() external returns (address);
+    function setUserRole(address user, uint8 role, bool enabled) external;
+    function doesUserHaveRole(address user, uint8 role) external view returns (bool);
+    function owner() external view returns (address);
 }
 
 library ConfigReader {
     using StdJson for string;
+    VmSafe private constant jsonVm = VmSafe(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     struct Config {
         address protocolAdmin;
@@ -29,7 +34,7 @@ library ConfigReader {
         bytes32 managerSalt;
         address balancerVault;
         bytes32 tellerSalt;
-        uint32 peerEid;
+        uint32[] peerEid;
         address[] requiredDvns;
         address[] optionalDvns;
         uint64 dvnBlockConfirmationsRequired;
@@ -44,7 +49,9 @@ library ConfigReader {
         bytes32 rolesAuthoritySalt;
         address manager;
         address teller;
+        address predicateProxy;
         string tellerContractName;
+        address operator;
         address strategist;
         address exchangeRateBot;
         address pauser;
@@ -53,12 +60,16 @@ library ConfigReader {
         address decoder;
         bytes32 rateProviderSalt;
         uint256 maxTimeFromLastUpdate;
+        bool generateSalt;
+        bool permissionedSalt;
+        bool multichainRestricted;
         address[] assets;
         address[] rateProviders;
         address[] priceFeeds;
+        address delegate;
     }
 
-    function toConfig(string memory _config, string memory _chainConfig) internal pure returns (Config memory config) {
+    function toConfig(string memory _config, string memory _chainConfig) internal view returns (Config memory config) {
         // Reading the 'protocolAdmin'
         config.protocolAdmin = _config.readAddress(".protocolAdmin");
         config.base = _config.readAddress(".base");
@@ -90,12 +101,12 @@ library ConfigReader {
         config.minGasForPeer = uint64(_config.readUint(".teller.minGasForPeer"));
         config.tellerContractName = _config.readString(".teller.tellerContractName");
         config.assets = _config.readAddressArray(".teller.assets");
+        config.predicateProxy = _config.readAddress(".teller.predicateProxy");
 
         // layerzero
         if (compareStrings(config.tellerContractName, "MultiChainLayerZeroTellerWithMultiAssetSupport")) {
             config.lzEndpoint = _chainConfig.readAddress(".lzEndpoint");
-
-            config.peerEid = uint32(_config.readUint(".teller.peerEid"));
+            config.peerEid = toUint32Array(_config.readUintArray(".teller.peerEid"));
             config.requiredDvns = _config.readAddressArray(".teller.dvnIfNoDefault.required");
             config.optionalDvns = _config.readAddressArray(".teller.dvnIfNoDefault.optional");
             config.dvnBlockConfirmationsRequired =
@@ -112,6 +123,7 @@ library ConfigReader {
         config.strategist = _config.readAddress(".rolesAuthority.strategist");
         config.exchangeRateBot = _config.readAddress(".rolesAuthority.exchangeRateBot");
         config.pauser = _config.readAddress(".rolesAuthority.pauser");
+        config.operator = _config.readAddress(".rolesAuthority.operator");
 
         // Reading from the 'decoder' section
         config.decoderSalt = _config.readBytes32(".decoder.decoderSalt");
@@ -120,10 +132,29 @@ library ConfigReader {
         // Reading from the 'chainConfig' section
         config.balancerVault = _chainConfig.readAddress(".balancerVault");
 
+        // Reading salt config
+        config.generateSalt =  _config.readBool(".salt.generate");
+        config.permissionedSalt =  _config.readBool(".salt.permissioned");
+        config.multichainRestricted =  _config.readBool(".salt.multichainRestricted");
+
+        try jsonVm.parseJsonAddress(_config, ".teller.delegate") returns (address delegateAddr) {
+            config.delegate = delegateAddr;
+        } catch {
+            config.delegate = address(0);
+        }
+
         return config;
     }
 
     function compareStrings(string memory a, string memory b) internal pure returns (bool) {
         return (keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b)));
+    }
+
+    function toUint32Array(uint256[] memory input) public pure returns (uint32[] memory) {
+        uint32[] memory output = new uint32[](input.length);
+        for (uint256 i = 0; i < input.length; i++) {
+            output[i] = uint32(input[i]);
+        }
+        return output;
     }
 }
