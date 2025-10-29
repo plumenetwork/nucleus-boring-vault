@@ -1,0 +1,24 @@
+{
+  "name": "Plume",
+  "balancerVault": "0x0000000000000000000000000000000000000000",
+  "lzEndpoint": "0xC1b15d3B262bEeC0e3565C11C9e0F6134BdaCB36",
+  "assetToRateProviderAndPriceFeed": {
+    "NOTE_0_CHAINLINK_1_REDSTONE_2_GENERIC": 0,
+    "NOTE_THESE_KEYS_MUST_NOT_BE_CHECKSUMMED": 0,
+    "maxTimeFromLastUpdate": "86400",
+    "0xdddd73f5df1f0dc31373357beac77545dc5a6f3f": {
+      "priceFeed": "0x0000000000000000000000000000000000000000",
+      "rateProvider": "0x0000000000000000000000000000000000000000",
+      "decimals": 18,
+      "description": "pUSD",
+      "priceFeedType": 0
+    },
+    "0x222365ef19f7947e5484218551b56bb3965aa7af" : {
+      "priceFeed": "0x0000000000000000000000000000000000000000",
+      "rateProvider": "0x0000000000000000000000000000000000000000",
+      "decimals": 18,
+      "description": "USDC",
+      "priceFeedType": 0
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+    "name": "Arbitrum One",
+    "balancerVault": "0x0000000000000000000000000000000000000000",
+    "lzEndpoint": "0x1a44076050125825900e736c501f859c50fE728c",
+    "assetToRateProviderAndPriceFeed": {
+      "NOTE_0_CHAINLINK_1_REDSTONE_2_GENERIC": 0,
+      "NOTE_THESE_KEYS_MUST_NOT_BE_CHECKSUMMED": 0,
+      "maxTimeFromLastUpdate": "86400",
+      "0xaf88d065e77c8cc2239327c5edb3a432268e5831": {
+        "priceFeed": "0x0000000000000000000000000000000000000000",
+        "rateProvider": "0x0000000000000000000000000000000000000000",
+        "decimals": 18,
+        "description": "USDT",
+        "priceFeedType": 0
+      }
+    }
+}

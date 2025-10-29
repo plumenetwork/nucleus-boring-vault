@@ -3,6 +3,7 @@
   "balancerVault": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
   "opMessenger": "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1",
   "lzEndpoint": "0x1a44076050125825900e736c501f859c50fE728c",
+  "mailbox": "0xc005dc82818d67AF737725bD4bf75435d065D239",
   "assetToRateProviderAndPriceFeed": {
     "NOTE_0_CHAINLINK_1_REDSTONE_2_GENERIC": 0,
     "NOTE_THESE_KEYS_MUST_NOT_BE_CHECKSUMMED": 0,
@@ -96,6 +97,13 @@
       "expectedMin": "1000000000000000000",
       "expectedMax": "1200000000000000000",
       "rateProvider": "0xa427b23b686986ed993b4ba9ae23bf65022f938a"
+    },
+    "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
+      "priceFeed": "0x0000000000000000000000000000000000000000",
+      "rateProvider": "0x0000000000000000000000000000000000000000",
+      "decimals": 18,
+      "description": "USDC",
+      "priceFeedType": 0
     }
   }
 }

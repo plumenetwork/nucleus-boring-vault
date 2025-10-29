@@ -1,0 +1,17 @@
+{
+    "name": "Plasma",
+    "balancerVault": "0x0000000000000000000000000000000000000000",
+    "lzEndpoint": "0x6F475642a6e85809B1c36Fa62763669b1b48DD5B",
+    "assetToRateProviderAndPriceFeed": {
+      "NOTE_0_CHAINLINK_1_REDSTONE_2_GENERIC": 0,
+      "NOTE_THESE_KEYS_MUST_NOT_BE_CHECKSUMMED": 0,
+      "maxTimeFromLastUpdate": "86400",
+      "0xb8ce59fc3717ada4c02eadf9682a9e934f625ebb": {
+        "priceFeed": "0x0000000000000000000000000000000000000000",
+        "rateProvider": "0x0000000000000000000000000000000000000000",
+        "decimals": 18,
+        "description": "USDT",
+        "priceFeedType": 0
+      }
+    }
+}

@@ -8,6 +8,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { Script, stdJson } from "@forge-std/Script.sol";
 
 import { ConfigReader, IAuthority } from "./ConfigReader.s.sol";
+import { console2 } from "forge-std/console2.sol";
 
 abstract contract BaseScript is Script {
     using stdJson for string;
@@ -71,7 +72,7 @@ abstract contract BaseScript is Script {
         vm.stopBroadcast();
     }
 
-    function deploy(ConfigReader.Config memory config) public virtual returns (address) {
+    function deploy(ConfigReader.Config memory) public virtual returns (address) {
         revert("deploy() Not Implemented");
     }
 
@@ -88,7 +89,35 @@ abstract contract BaseScript is Script {
         return vm.readFile(path);
     }
 
-    function compareStrings(string memory a, string memory b) internal returns (bool) {
+    function compareStrings(string memory a, string memory b) internal pure returns (bool) {
         return (keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b)));
+    }
+
+    function generateCreate3Salt(
+        ConfigReader.Config memory config,
+        string memory name,
+        bytes32 salt
+    ) public view returns (bytes32) {
+        if (!config.generateSalt) {
+            require(salt != bytes32(0), "Salt must be non-zero");
+            return salt;
+        }
+
+        require(salt == bytes32(0), "Salt must be zero");
+
+        bytes32 generatedSalt =
+            bytes32(
+                abi.encodePacked(
+                    config.permissionedSalt ? broadcaster : address(0),
+                    config.multichainRestricted ? hex"01" : hex"00",
+                    stringHashToBytes11(name)
+                )
+            );
+
+        return generatedSalt;
+    }
+
+    function stringHashToBytes11(string memory name) internal pure returns (bytes11) {
+        return bytes11(keccak256(bytes(name))); // first 11 bytes of the keccak256
     }
 }
