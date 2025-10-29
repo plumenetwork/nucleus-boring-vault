@@ -11,12 +11,16 @@ import { ConfigReader } from "../../ConfigReader.s.sol";
 import { CrossChainTellerBase } from "../../../src/base/Roles/CrossChain/CrossChainTellerBase.sol";
 import { stdJson as StdJson } from "@forge-std/StdJson.sol";
 import "./../../../src/helper/Constants.sol";
+import { AtomicSolverV3 } from "../../../src/atomic-queue/AtomicSolverV3.sol";
 
 /**
  * NOTE Deploys with `Authority` set to zero bytes.
  */
 contract DeployRolesAuthority is BaseScript {
     using StdJson for string;
+
+    address constant atomicSolverV3 = address(0x54563d1DdB55b029D6D7AcD89C633af746823092);
+    address constant atomicSolver = address(0x77fb098A1C28a5b50BFAdb69Ca1bEE515a7FC974);
 
     function run() public virtual returns (address rolesAuthority) {
         return deploy(getConfig());
@@ -34,6 +38,9 @@ contract DeployRolesAuthority is BaseScript {
     //     - boringVault.enter()
     //     - boringVault.exit()
     //     - assigned to TELLER
+    //     - teller.deposit()
+    //     - teller.depositAndBridge()
+    //     - assigned to PREDICATE_PROXY
     // 4. UPDATE_EXCHANGE_RATE_ROLE
     //     - accountant.updateExchangeRate()
     //     - assigned to EXCHHANGE_RATE_BOT & OWNER
@@ -44,9 +51,7 @@ contract DeployRolesAuthority is BaseScript {
     //     - accountant.pause()
     //     - manager.pause()
     // --- Public Functions ---
-    // 1. teller.deposit()
-    // 2. teller.bridge()
-    // 3. teller.depositAndBridge()
+    // 1. teller.bridge()
     // --- Users / Role Assignments ---
     // STRATEGIST_ROLE -> OWNER (multisig)
     // MANAGER_ROLE -> MANAGER (contract)
@@ -64,12 +69,16 @@ contract DeployRolesAuthority is BaseScript {
         require(config.teller != address(0), "teller");
         require(config.accountant != address(0), "accountant");
         require(config.strategist != address(0), "strategist");
+        require(config.operator != address(0), "operator");
+
+        string memory saltString = string.concat(config.boringVaultName, " RolesAuthority");
+        bytes32 salt = generateCreate3Salt(config, saltString, config.rolesAuthoritySalt);
 
         // Create Contract
         bytes memory creationCode = type(RolesAuthority).creationCode;
         RolesAuthority rolesAuthority = RolesAuthority(
             CREATEX.deployCreate3(
-                config.rolesAuthoritySalt,
+                salt,
                 abi.encodePacked(
                     creationCode,
                     abi.encode(
@@ -108,6 +117,7 @@ contract DeployRolesAuthority is BaseScript {
         );
 
         rolesAuthority.setRoleCapability(PAUSER_ROLE, config.teller, TellerWithMultiAssetSupport.pause.selector, true);
+
         rolesAuthority.setRoleCapability(
             PAUSER_ROLE, config.accountant, AccountantWithRateProviders.pause.selector, true
         );
@@ -116,11 +126,21 @@ contract DeployRolesAuthority is BaseScript {
         );
 
         // --- Set Public Capabilities ---
-        rolesAuthority.setPublicCapability(config.teller, TellerWithMultiAssetSupport.deposit.selector, true);
         rolesAuthority.setPublicCapability(config.teller, CrossChainTellerBase.bridge.selector, true);
-        rolesAuthority.setPublicCapability(config.teller, CrossChainTellerBase.depositAndBridge.selector, true);
+
+        if (config.predicateProxy != address(0)) {
+            rolesAuthority.setRoleCapability(PREDICATE_PROXY_ROLE, config.teller, TellerWithMultiAssetSupport.deposit.selector, true);
+            rolesAuthority.setRoleCapability(PREDICATE_PROXY_ROLE, config.teller, CrossChainTellerBase.depositAndBridge.selector, true);
+        } else {
+            rolesAuthority.setPublicCapability(config.teller, TellerWithMultiAssetSupport.deposit.selector, true);
+            rolesAuthority.setPublicCapability(config.teller, CrossChainTellerBase.depositAndBridge.selector, true);
+        }
 
         // --- Assign roles to users ---
+
+        if (config.predicateProxy != address(0)) {
+            rolesAuthority.setUserRole(config.predicateProxy, PREDICATE_PROXY_ROLE, true);
+        }
 
         rolesAuthority.setUserRole(config.strategist, STRATEGIST_ROLE, true);
 
@@ -210,15 +230,54 @@ contract DeployRolesAuthority is BaseScript {
             "protocolAdmin should be able to call accountant.updateExchangeRate"
         );
         require(
-            rolesAuthority.canCall(address(1), config.teller, TellerWithMultiAssetSupport.deposit.selector),
+            rolesAuthority.canCall(address(1), config.teller, CrossChainTellerBase.bridge.selector),
             "anyone should be able to call teller.deposit"
         );
+        if (config.predicateProxy != address(0)) {
+            require(
+                rolesAuthority.canCall(config.predicateProxy, config.teller, TellerWithMultiAssetSupport.deposit.selector),
+                "predicateProxy should be able to call teller.deposit"
+            );
+            require(
+                rolesAuthority.canCall(
+                    config.predicateProxy, config.teller, CrossChainTellerBase.depositAndBridge.selector
+                ),
+                "predicateProxy should be able to call teller.depositAndBridge"
+            );
+            require(
+                !rolesAuthority.canCall(address(1), config.teller, TellerWithMultiAssetSupport.deposit.selector),
+                "anyone should  be able to call teller.deposit"
+            );
+            require(
+                !rolesAuthority.canCall(address(1), config.teller, CrossChainTellerBase.depositAndBridge.selector),
+                "anyone should NOT be able to call teller.depositAndBridge"
+            );
+        } else {
+            require(
+                rolesAuthority.canCall(address(1), config.teller, TellerWithMultiAssetSupport.deposit.selector),
+                "anyone should be able to call teller.deposit"
+            );
+            require(
+                rolesAuthority.canCall(address(1), config.teller, CrossChainTellerBase.depositAndBridge.selector),
+                "anyone should be able to call teller.depositAndBridge"
+            );
+        }
 
         // Pauser Roles
         _validatePauserRole(config, rolesAuthority, config.protocolAdmin);
         if (config.pauser != address(0)) {
             _validatePauserRole(config, rolesAuthority, config.pauser);
         }
+
+        rolesAuthority.setRoleCapability(
+            SOLVER_ROLE, config.teller, TellerWithMultiAssetSupport.bulkWithdraw.selector, true
+        );
+        rolesAuthority.setUserRole(address(atomicSolverV3), SOLVER_ROLE, true);
+        rolesAuthority.setUserRole(address(atomicSolver), SOLVER_ROLE, true);
+
+        rolesAuthority.setUserRole(config.operator, MANAGER_ROLE, true);
+        rolesAuthority.setUserRole(config.operator, UPDATE_EXCHANGE_RATE_ROLE, true);
+        rolesAuthority.setUserRole(config.operator, SOLVER_ROLE, true);
 
         return address(rolesAuthority);
     }
